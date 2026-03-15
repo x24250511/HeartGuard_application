@@ -1,0 +1,293 @@
+{% extends 'heartguard/base.html' %}
+{% block title %}ECG Report #{{ upload.id }} - HeartGuard{% endblock %}
+{% block content %}
+<div class="container py-5">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-file-earmark-medical me-2 text-danger"></i>ECG Report #{{ upload.id
+                }}</h2>
+            <p class="text-muted mb-0">
+                {{ upload.original_filename }} &middot; {{ upload.created_at|date:"M d, Y H:i" }}
+                {% if upload.patient_name %}&middot; {{ upload.patient_name }}{% endif %}
+                {% if upload.patient_age %}({{ upload.patient_age }} yrs){% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'upload_update' upload.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <a href="{% url 'upload_delete' upload.pk %}" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-trash me-1"></i>Delete
+            </a>
+            <a href="{% url 'upload_list' %}" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Upload Info Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2 text-primary"></i>Upload Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>File:</strong> {% if upload.is_image %}<i
+                            class="bi bi-file-image text-primary me-1"></i>{% else %}<i
+                            class="bi bi-file-pdf text-danger me-1"></i>{% endif %}{{ upload.original_filename }}</p>
+                    <p><strong>Patient:</strong> {{ upload.patient_name|default:"—" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Age:</strong> {{ upload.patient_age|default:"—" }}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-{{ upload.status_color }}">{{
+                            upload.get_status_display }}</span></p>
+                </div>
+            </div>
+            {% if upload.notes %}
+            <p class="mb-0"><strong>Notes:</strong> {{ upload.notes }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if result %}
+
+    <!-- Emergency Alert -->
+    {% if result.emergency_alert %}
+    <div class="alert alert-danger border-danger shadow-sm mb-4">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
+            <div>
+                <h5 class="fw-bold mb-1">EMERGENCY ALERT</h5>
+                <p class="mb-0">This ECG shows signs requiring <strong>IMMEDIATE medical attention</strong>. Contact
+                    emergency services (911) right away.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Cards: Diagnosis + HR + Risk -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted text-uppercase small">Diagnosis</h6>
+                    <span class="badge bg-{{ result.severity_color }} mb-2 px-3 py-2">{{ result.severity|upper }}</span>
+                    <h5 class="fw-bold">{{ result.diagnosis }}</h5>
+                    <div class="mt-2">
+                        <small class="text-muted">Confidence</small>
+                        <div class="progress mt-1" style="height:10px;">
+                            <div class="progress-bar bg-{{ result.severity_color }}"
+                                style="width:{{ result.confidence_percent }}%"></div>
+                        </div>
+                        <strong>{{ result.confidence_percent }}%</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted text-uppercase small">Heart Rate</h6>
+                    <div
+                        class="display-4 fw-bold {% if result.heart_rate_status == 'normal' %}text-success{% elif result.heart_rate_status == 'high' %}text-danger{% else %}text-warning{% endif %}">
+                        {{ result.heart_rate }}
+                    </div>
+                    <small class="text-muted">BPM</small><br>
+                    <span
+                        class="badge bg-{% if result.heart_rate_status == 'normal' %}success{% elif result.heart_rate_status == 'high' %}danger{% else %}warning{% endif %} mt-1">
+                        {{ result.heart_rate_status|title }}
+                    </span>
+                    <p class="text-muted small mt-2 mb-0">Normal: 60–100 BPM</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted text-uppercase small">Heart Attack Risk</h6>
+                    <div class="display-4 fw-bold text-{{ result.risk_color }}">{{ result.heart_attack_percent }}%</div>
+                    <div class="progress mt-2" style="height:10px;">
+                        <div class="progress-bar bg-{{ result.risk_color }}"
+                            style="width:{{ result.heart_attack_percent }}%"></div>
+                    </div>
+                    <span class="badge bg-{{ result.risk_color }} mt-2 px-3 py-2">{{ result.heart_attack_risk|upper
+                        }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Measurements -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2 text-danger"></i>ECG Measurements</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Measurement</th>
+                            <th>Value</th>
+                            <th>Normal Range</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>PR Interval</td>
+                            <td><strong>{{ result.pr_interval }} ms</strong></td>
+                            <td>120 – 200 ms</td>
+                            <td>
+                                {% if result.pr_interval >= 120 and result.pr_interval <= 200 %} <span
+                                    class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Normal</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i
+                                            class="bi bi-exclamation-circle me-1"></i>Abnormal</span>
+                                    {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>QRS Duration</td>
+                            <td><strong>{{ result.qrs_duration }} ms</strong></td>
+                            <td>80 – 120 ms</td>
+                            <td>
+                                {% if result.qrs_duration >= 80 and result.qrs_duration <= 120 %} <span
+                                    class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Normal</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i
+                                            class="bi bi-exclamation-circle me-1"></i>Abnormal</span>
+                                    {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>QT Interval</td>
+                            <td><strong>{{ result.qt_interval }} ms</strong></td>
+                            <td>350 – 440 ms</td>
+                            <td>
+                                {% if result.qt_interval >= 350 and result.qt_interval <= 440 %} <span
+                                    class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Normal</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark"><i
+                                            class="bi bi-exclamation-circle me-1"></i>Abnormal</span>
+                                    {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Predictions -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-bar-chart me-2 text-danger"></i>Classification Probabilities</h5>
+        </div>
+        <div class="card-body">
+            {% for label, pct in result.predictions_json.items %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="{% if label == result.diagnosis %}fw-bold{% endif %}">
+                        {% if label == result.diagnosis %}<i
+                            class="bi bi-arrow-right-circle-fill text-danger me-1"></i>{% endif %}
+                        {{ label }}
+                    </span>
+                    <span class="{% if label == result.diagnosis %}fw-bold{% endif %}">{{ pct }}%</span>
+                </div>
+                <div class="progress" style="height:12px;">
+                    <div class="progress-bar {% if label == result.diagnosis %}bg-danger{% else %}bg-secondary bg-opacity-25{% endif %}"
+                        style="width:{{ pct }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Findings -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-search me-2 text-primary"></i>Clinical Findings</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">{{ result.findings }}</p>
+        </div>
+    </div>
+
+    <!-- Recommended Steps -->
+    {% if result.recommendation_steps %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard2-check me-2 text-success"></i>Recommended Steps</h5>
+            <span class="badge bg-secondary">{{ result.recommendation_steps|length }} steps</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for step in result.recommendation_steps %}
+                <div
+                    class="list-group-item px-4 py-3 {% if step.priority == 'URGENT' %}border-start border-4 border-danger{% elif step.priority == 'HIGH' %}border-start border-4 border-warning{% endif %}">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3 mt-1">
+                            <span
+                                class="badge bg-{% if step.priority == 'URGENT' %}danger{% elif step.priority == 'HIGH' %}warning text-dark{% elif step.priority == 'MEDIUM' or step.priority == 'MODERATE' %}info{% elif step.priority == 'ONGOING' %}success{% else %}secondary{% endif %} px-2 py-1"
+                                style="min-width: 75px;">
+                                {{ step.priority }}
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-{{ step.icon }} text-{{ step.color }} me-2"></i>
+                                <strong>{{ step.action }}</strong>
+                            </div>
+                            <small class="text-muted">{{ step.reason }}</small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Fallback: plain text recommendations -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-clipboard2-pulse me-2 text-success"></i>Recommendations</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">{{ result.recommendations }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metadata -->
+    <div class="card bg-light border-0 mb-4">
+        <div class="card-body py-2">
+            <div class="row text-center text-muted small">
+                <div class="col"><i class="bi bi-clock me-1"></i>{{ result.processing_time }}s</div>
+                <div class="col"><i class="bi bi-calendar me-1"></i>{{ result.created_at|date:"M d, Y H:i" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="alert alert-warning text-center mb-0">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Disclaimer:</strong> For educational purposes only. Not a substitute for professional medical diagnosis.
+    </div>
+
+    {% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-hourglass-split display-3 text-muted"></i>
+            <p class="mt-3 text-muted">No analysis results available for this upload.</p>
+            {% if upload.error_message %}
+            <div class="alert alert-danger d-inline-block">{{ upload.error_message }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

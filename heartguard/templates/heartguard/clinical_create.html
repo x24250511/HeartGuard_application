@@ -1,0 +1,148 @@
+{% extends 'heartguard/base.html' %}
+{% block title %}Clinical Assessment - HeartGuard{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="bi bi-clipboard2-pulse me-2"></i>Clinical Risk Assessment</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Enter clinical measurements to get a <strong>Tabular Risk Model</strong> assessment.
+                        ECG upload is optional — add one for full 3-model fusion analysis.
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
+                        {% endif %}
+
+                        <!-- Optional ECG -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-file-earmark-arrow-up me-1"></i>ECG File
+                                <span class="text-muted fw-normal">(optional — enables CNN + PTB models)</span>
+                            </label>
+                            <input type="file" name="file" accept=".jpg,.jpeg,.png,.pdf" class="form-control">
+                            <div class="form-text">Adding an ECG activates the full 3-model fusion pipeline.</div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Patient Info -->
+                        <h6 class="fw-semibold text-muted mb-3">
+                            <i class="bi bi-person me-1"></i>Patient Information
+                        </h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label">Patient Name</label>
+                                <input type="text" name="patient_name" class="form-control"
+                                    placeholder="e.g. John Smith">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Age</label>
+                                <input type="number" name="patient_age" class="form-control" placeholder="e.g. 45"
+                                    min="1" max="150">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Sex</label>
+                                {{ form.patient_sex }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Clinical Data (open by default) -->
+                        <h6 class="fw-semibold text-muted mb-3">
+                            <i class="bi bi-clipboard2-pulse me-1 text-danger"></i>Clinical Measurements
+                            <span class="text-danger fw-normal">*</span>
+                        </h6>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Chest Pain Type</label>
+                                {{ form.chest_pain_type }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Resting BP <small class="text-muted">(mmHg)</small> <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" name="resting_bp" class="form-control" placeholder="e.g. 130"
+                                    min="60" max="250">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cholesterol <small class="text-muted">(mg/dL)</small> <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" name="cholesterol" class="form-control" placeholder="e.g. 240"
+                                    min="50" max="700">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Fasting Blood Sugar &gt;120</label>
+                                {{ form.fasting_bs }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Resting ECG</label>
+                                {{ form.resting_ecg }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Max Heart Rate <small class="text-muted">(BPM)</small> <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" name="max_heart_rate" class="form-control" placeholder="e.g. 150"
+                                    min="50" max="250">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Exercise Angina</label>
+                                {{ form.exercise_angina }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">ST Depression <small
+                                        class="text-muted">(Oldpeak)</small></label>
+                                <input type="number" name="oldpeak" class="form-control" placeholder="e.g. 1.5" min="0"
+                                    max="10" step="0.1">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">ST Slope</label>
+                                {{ form.st_slope }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="2"
+                                placeholder="Symptoms, history, notes..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-lightning-charge me-2"></i>Run Clinical Assessment
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <a href="{% url 'upload_list' %}" class="text-muted text-decoration-none">
+                    <i class="bi bi-arrow-left me-1"></i>Back to My Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('select').forEach(function (el) {
+        el.classList.add('form-select');
+    });
+</script>
+{% endblock %}
